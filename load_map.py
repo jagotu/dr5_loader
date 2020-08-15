@@ -40,7 +40,7 @@ if filename is not None and os.path.isfile(filename):
                 
                 if(section_name in real_base):
                     real_addr = real_base[section_name] + int(off, 16)
-                    idaapi.add_entry(real_addr, real_addr, name, 1)
+                    ida_name.set_name(real_addr, name)
                 
             
         
