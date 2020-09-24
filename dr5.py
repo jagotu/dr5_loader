@@ -130,7 +130,8 @@ def loadExportsF(f):
 	while f.tell() < headerStart + pNam + cbNam:
 		name = readPASSTRF(f)
 		if len(name) == 0:
-			break
+			DW(f)
+			continue
 		ord = DW(f)
 		table[ord] = name
 
@@ -138,7 +139,8 @@ def loadExportsF(f):
 	while f.tell() < headerStart + pNRNam + cbNRNam:
 		name = readPASSTRF(f)
 		if len(name) == 0:
-			break
+			DW(f)
+			continue
 		ord = DW(f)
 		table[ord] = name
 
