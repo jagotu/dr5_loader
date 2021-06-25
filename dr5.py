@@ -251,7 +251,7 @@ def load_file(f, neflags, format):
 		add_segm_ex(segBase, (base+segStart+segLen)*16, base + segStart, 0, segmentDataAlignment, 2, ADDSEG_NOSREG) 
 		segtable[i] = segBase
 		segimportstable[i] = segImports
-		if i == 0:
+		if i + 1 == AutoDataSegNo:
 			SegRename(segBase,"DATA")
 			SegClass(segBase,"DATA")
 			set_segm_type(segBase,SEG_DATA)
