@@ -260,6 +260,8 @@ def load_file(f, neflags, format):
 			SegRename(segBase,"TEXT")
 			SegClass(segBase,"CODE")
 			set_segm_type(segBase,SEG_CODE)
+			if AutoDataSegNo == 0:
+				dataBase = base+segStart
 			SetSegmentAttr(segBase, SEGATTR_DS, dataBase)
 
 	#parse enttable
