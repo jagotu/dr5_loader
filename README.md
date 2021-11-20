@@ -10,6 +10,6 @@ Copy dr5.py to IDA's loader directory
 
 A helper script for loading DR5 MAP files. Use File -> Script file... (Alt+F7)
 
-## load_map.py
+## class_proc.py
 
 A helper script that tries to find and name CLASS functions (like Create, Destroy, Icon etc.). Use File -> Script file... (Alt+F7)
