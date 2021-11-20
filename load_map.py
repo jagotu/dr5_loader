@@ -1,14 +1,16 @@
 import os
-import idaapi
+import ida_segment
+import ida_kernwin
+import ida_name
 
-filename = idaapi.ask_file(0, "", "FILTER *.MAP\nSelect MAP file")
+filename = ida_kernwin.ask_file(0, "", "FILTER *.MAP\nSelect MAP file")
 if filename is not None and os.path.isfile(filename):
 
     real_base = {}
     map_base = {}
 
-    real_base['DGROUP'] = idaapi.get_segm_base(idaapi.get_segm_by_name("DATA"))
-    real_base['IGROUP'] = idaapi.get_segm_base(idaapi.get_segm_by_name("TEXT"))
+    real_base['DGROUP'] = ida_segment.get_segm_by_name("DATA").start_ea
+    real_base['IGROUP'] = ida_segment.get_segm_by_name("TEXT").start_ea
 
     with open(filename, "r") as f:
         data = f.read().split('\n')
