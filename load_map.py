@@ -9,8 +9,8 @@ if filename is not None and os.path.isfile(filename):
     real_base = {}
     map_base = {}
 
-    real_base['DGROUP'] = ida_segment.get_segm_by_name("DATA").start_ea
-    real_base['IGROUP'] = ida_segment.get_segm_by_name("TEXT").start_ea
+    real_base['DGROUP'] = ida_segment.get_segm_by_name("_DATA").start_ea
+    real_base['IGROUP'] = ida_segment.get_segm_by_name("_TEXT").start_ea
 
     with open(filename, "r") as f:
         data = f.read().split('\n')
@@ -43,6 +43,3 @@ if filename is not None and os.path.isfile(filename):
                 if(section_name in real_base):
                     real_addr = real_base[section_name] + int(off, 16)
                     ida_name.set_name(real_addr, name)
-                
-            
-        

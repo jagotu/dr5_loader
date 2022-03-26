@@ -8,7 +8,7 @@ import ida_ua
 import ida_xref
 
 res = ida_name.get_name_value(ida_idaapi.BADADDR, "REGISTERCLASS")
-code_ea = ida_segment.get_segm_by_name("TEXT").start_ea
+code_ea = ida_segment.get_segm_by_name("_TEXT").start_ea
 
 procs = {
     0x18: "Create",
@@ -37,6 +37,4 @@ if res[0] == 1:
                     ida_funcs.add_func(target, ida_idaapi.BADADDR)
                     ida_name.set_name(target, procs[insn.Op1.addr] + "_" + hex(regcall)[2:]) 
             ida_ua.decode_prev_insn(insn, insn.ea)
-            
-        
         regcall =  ida_xref.get_next_cref_to(regfunc, regcall)

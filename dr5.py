@@ -15,9 +15,9 @@ import os
 import struct
 
 
-NE_HEADER_MAGIC 		= b"NE"
-MZ_HEADER_MAGIC         = b"MZ"
-SEG_STRUCT_SIZE			= 12
+NE_HEADER_MAGIC = b"NE"
+MZ_HEADER_MAGIC = b"MZ"
+SEG_STRUCT_SIZE = 12
 
 segtable = {}
 segimportstable = {}
@@ -25,7 +25,7 @@ importedmodules = {}
 enttable = {}
 toexport = []
 
-def DB(f):	
+def DB(f):
 	return struct.unpack("<B", f.read(1))[0]
 def DW(f):
 	return struct.unpack("<H", f.read(2))[0]
@@ -34,22 +34,22 @@ def DD(f):
 
 def nDB(ea, name):
 	ida_bytes.create_data(ea, ida_bytes.FF_BYTE, 1, ida_idaapi.BADADDR)
-	ida_name.set_name(ea,name,ida_name.SN_NOCHECK)
+	ida_name.set_name(ea, name, ida_name.SN_NOCHECK)
 def nDW(ea, name):
 	ida_bytes.create_data(ea, ida_bytes.FF_WORD, 2, ida_idaapi.BADADDR)
-	ida_name.set_name(ea,name,ida_name.SN_NOCHECK)
+	ida_name.set_name(ea, name, ida_name.SN_NOCHECK)
 def nDD(ea, name):
 	ida_bytes.create_data(ea, ida_bytes.FF_DWORD, 4, ida_idaapi.BADADDR)
-	ida_name.set_name(ea,name,ida_name.SN_NOCHECK)
+	ida_name.set_name(ea, name, ida_name.SN_NOCHECK)
 
 def rnDB(f, name, off):
-	nDB(f.tell()-off, name)
+	nDB(f.tell() - off, name)
 	return DB(f)
 def rnDW(f, name, off):
-	nDW(f.tell()-off, name)
+	nDW(f.tell() - off, name)
 	return DW(f)
 def rnDD(f, name, off):
-	nDD(f.tell()-off, name)
+	nDD(f.tell() - off, name)
 	return DD(f)
 
 def defSEGENT():
@@ -81,31 +81,31 @@ def defENTENT():
 	return sid
 
 def makePASSTR(ea):
-	len = ida_bytes.get_byte(ea)
-	ida_bytes.create_strlit(ea, len+1, ida_bytes.STRTYPE_PASCAL)
-	return len
+	length = ida_bytes.get_byte(ea)
+	ida_bytes.create_strlit(ea, length + 1, ida_bytes.STRTYPE_PASCAL)
+	return length
 
 def readPASSTR(ea):
 	out = ""
-	len = ida_bytes.get_byte(ea)
+	length = ida_bytes.get_byte(ea)
 	ea += 1
-	for i in range(len):
-		out += chr(ida_bytes.get_byte(ea+i))
+	for i in range(length):
+		out += chr(ida_bytes.get_byte(ea + i))
 	return out
 
 def readPASSTRF(f):
-	len = f.read(1)[0]
-	if len == 0:
+	length = f.read(1)[0]
+	if length == 0:
 		return ""
 	else:
-		return f.read(len).decode()
+		return f.read(length).decode()
 
 def make_entry(val, name):
 	if val != 0:	
-		segNo = (val >> 16)-1
+		segNo = (val >> 16) - 1
 		segStart = segtable[segNo].start_ea
 		segOff = (val & 0xFFFF)
-		addr = segStart+segOff
+		addr = segStart + segOff
 		ida_entry.add_entry(addr, addr, name, 1)
 
 def loadExportsF(f):
@@ -136,8 +136,8 @@ def loadExportsF(f):
 		if len(name) == 0:
 			DW(f)
 			continue
-		ord = DW(f)
-		table[ord] = name
+		ordinal = DW(f)
+		table[ordinal] = name
 
 	f.seek(headerStart + pNRNam)
 	while f.tell() < headerStart + pNRNam + cbNRNam:
@@ -145,26 +145,21 @@ def loadExportsF(f):
 		if len(name) == 0:
 			DW(f)
 			continue
-		ord = DW(f)
-		table[ord] = name
+		ordinal = DW(f)
+		table[ordinal] = name
 
-	
 	return table
 
 def loadExports(filename):
 	with open(filename, "rb") as f:
 		return loadExportsF(f)
 
-
-
-
-
 def accept_file(f, filename):
 	if filename == 0 or type(filename) == str:
 		f.seek(0)
 		magic = f.read(2)
 		if magic == NE_HEADER_MAGIC:
-				return "Bare DR5 executable"
+				return "Plain New Executable (NE) DR5"
 
 		if magic == MZ_HEADER_MAGIC:
 			f.seek(0x22)
@@ -172,11 +167,11 @@ def accept_file(f, filename):
 			f.seek(MZlen)
 			magic = f.read(2)
 			if magic == NE_HEADER_MAGIC:
-				return "DR5 executable"
+				return "New Executable (NE) DR5"
 
 	return 0
 
-def load_file(f, neflags, format):
+def load_file(f, neflags, fileformatname):
 	f.seek(0)	
 
 	ida_idp.set_processor_type("metapc", ida_idp.SETPROC_LOADER)
@@ -196,8 +191,10 @@ def load_file(f, neflags, format):
 
 	f.file2base(MGROUPStart, 0, SegDataOff, True)
 	ida_segment.add_segm(0, 0, 0x50, "HEADER", "MODULE")
-	f.seek(MGROUPStart+2)
+	ida_segment.set_segm_addressing(ida_segment.getseg(0), 0)
+	f.seek(MGROUPStart)
 
+	magic = rnDW(f, "magic", MGROUPStart)
 	headerSize = rnDW(f, "headerSize", MGROUPStart)
 	segmentDataAlignment = rnDW(f, "segmentDataAlignment", MGROUPStart)
 	nextExeOff = rnDD(f, "nextExeOff", MGROUPStart)
@@ -226,60 +223,62 @@ def load_file(f, neflags, format):
 	cbNRNamTab = rnDW(f,"cbNRNamTab", MGROUPStart)
 	pNRNamTab = rnDW(f,"pNRNamTab", MGROUPStart)
 
-
-	
-	ida_segment.add_segm(0, pSegTable, pSegTable+(nSegments*SEG_STRUCT_SIZE), "SEGTABLE", "MODULE")
-	ida_segment.add_segm(0, pResTab, pResTab+cbResTab, "RESOURCES", "MODULE")
-	ida_segment.add_segm(0, pEntTab, pEntTab+cbEntTab, "ENTTABLE", "MODULE")
-	ida_segment.add_segm(0, pNamTab, pNamTab+cbNamTab, "ENTNAME", "MODULE")	
-	ida_segment.add_segm(0, pStrTab, pStrTab+cbStrTab, "IMPORTS", "MODULE")	
-	ida_segment.add_segm(0, pNRNamTab, pNRNamTab+cbNRNamTab, "NRENTNAME", "MODULE")
+	ida_segment.add_segm(0, pSegTable, pSegTable + (nSegments * SEG_STRUCT_SIZE), "SEGTABLE", "MODULE")
+	ida_segment.set_segm_addressing(ida_segment.getseg(pSegTable), 0)
+	ida_segment.add_segm(0, pResTab, pResTab + cbResTab, "RESOURCES", "MODULE")
+	ida_segment.set_segm_addressing(ida_segment.getseg(pResTab), 0)
+	ida_segment.add_segm(0, pEntTab, pEntTab + cbEntTab, "ENTTABLE", "MODULE")
+	ida_segment.set_segm_addressing(ida_segment.getseg(pEntTab), 0)
+	ida_segment.add_segm(0, pNamTab, pNamTab + cbNamTab, "ENTNAME", "MODULE")
+	ida_segment.set_segm_addressing(ida_segment.getseg(pNamTab), 0)
+	ida_segment.add_segm(0, pStrTab, pStrTab + cbStrTab, "IMPORTS", "MODULE")
+	ida_segment.set_segm_addressing(ida_segment.getseg(pStrTab), 0)
+	ida_segment.add_segm(0, pNRNamTab, pNRNamTab + cbNRNamTab, "NRENTNAME", "MODULE")
+	ida_segment.set_segm_addressing(ida_segment.getseg(pNRNamTab), 0)
 
 	#parse segtable
 	segentsid = defSEGENT()
-	base = SegDataOff//16
+	base = SegDataOff // 16
 
 	importCount = 0
 	for i in range(nSegments):
-		segEntStart = pSegTable+i*SEG_STRUCT_SIZE
+		segEntStart = pSegTable + i * SEG_STRUCT_SIZE
 		ida_bytes.create_struct(segEntStart, SEG_STRUCT_SIZE, segentsid)
-		segStart = ida_bytes.get_word(segEntStart+2)
-		segLen = ida_bytes.get_word(segEntStart+4)
-		segImports = ida_bytes.get_word(segEntStart+6)
+		segStart = ida_bytes.get_word(segEntStart + 2)
+		segLen = ida_bytes.get_word(segEntStart + 4)
+		segImports = ida_bytes.get_word(segEntStart + 6)
 		importCount += segImports
-		f.file2base(MGROUPStart+SegDataOff+segStart*16, SegDataOff+segStart*16, SegDataOff+(segStart+segLen)*16, True)
+		f.file2base(MGROUPStart + SegDataOff+segStart * 16, SegDataOff + segStart * 16, SegDataOff + (segStart + segLen) * 16, True)
 		
-		segBase = (base + segStart)*16
+		segBase = (base + segStart) * 16
 		#segmentDef = ida_segment.segment_t()
 		#segmentDef.start_ea = segBase
-		#segmentDef.end_ea = (base+segStart+segLen)*16
+		#segmentDef.end_ea = (base + segStart + segLen) * 16
 		#ida_segment.set_selector()
-		print(base+segStart)
-		ida_segment.add_segm(base + segStart, segBase, (base+segStart+segLen)*16, "", "", 0) 
-		sel = ida_segment.find_selector(base+segStart)
+		print(base + segStart)
+		ida_segment.add_segm(base + segStart, segBase, (base + segStart + segLen) * 16, "", "", 0) 
+		sel = ida_segment.find_selector(base + segStart)
 		seg = ida_segment.getseg(segBase)
 		ida_segment.set_segm_addressing(seg, 0)
 		segtable[i] = seg
 		segimportstable[i] = segImports
 		if i + 1 == AutoDataSegNo:
-			ida_segment.set_segm_name(seg, "DATA", 0)
+			ida_segment.set_segm_name(seg, "_DATA", 0)
 			ida_segment.set_segm_class(seg, "DATA", 0)
 			dataSel = sel
 		else:
-			ida_segment.set_segm_name(seg, "TEXT", 0)
+			ida_segment.set_segm_name(seg, "_TEXT", 0)
 			ida_segment.set_segm_class(seg, "CODE", 0)
 			if AutoDataSegNo == 0:
 				dataSel = sel
 	ida_segregs.set_default_dataseg(dataSel)
-
-	
 
 	#parse enttable
 	pENT = pEntTab
 	currord = 1
 	while pENT < pEntTab + cbEntTab:
 		bundleCount = ida_bytes.get_byte(pENT)
-		bundleFlags = ida_bytes.get_byte(pENT+1)
+		bundleFlags = ida_bytes.get_byte(pENT + 1)
 		if bundleCount == 0 and bundleFlags == 0:
 			break
 		pENT += 2
@@ -288,26 +287,26 @@ def load_file(f, neflags, format):
 				ordFlags = ida_bytes.get_byte(pENT)
 				if ordFlags & 0x80:
 					toexport.append(currord)
-				segNo = ida_bytes.get_byte(pENT+3)
-				segOff = ida_bytes.get_word(pENT+4)
+				segNo = ida_bytes.get_byte(pENT + 3)
+				segOff = ida_bytes.get_word(pENT + 4)
 			
-				enttable[currord] = (segtable[segNo-1].start_ea//16, segOff)
+				enttable[currord] = (segtable[segNo - 1].start_ea // 16, segOff)
 				pENT += 6
 			else:
 				ordFlags = ida_bytes.get_byte(pENT)
 				if ordFlags & 0x80:
 					toexport.append(currord)
-				segOff = ida_bytes.get_word(pENT+1)
-				enttable[currord] = (segtable[bundleFlags-1].start_ea//16, segOff)
+				segOff = ida_bytes.get_word(pENT + 1)
+				enttable[currord] = (segtable[bundleFlags - 1].start_ea // 16, segOff)
 				pENT += 3
 
 			currord += 1
 
 	modulename = readPASSTR(pNamTab)
 
-	make_entry(StartProc, modulename + "_start")
-	make_entry(LoadProc, modulename + "_load")
-	make_entry(FreeProc, modulename + "_free")
+	make_entry(StartProc, modulename.capitalize() + "Start")
+	make_entry(LoadProc, modulename.capitalize() + "Load")
+	make_entry(FreeProc, modulename.capitalize() + "Free")
 
 	#export named ordinals
 	namedordtable = loadExportsF(f)
@@ -316,21 +315,21 @@ def load_file(f, neflags, format):
 		if i in namedordtable:
 			name = namedordtable[i]
 		else:
-			name = "Ordinal" + str(i)
+			name = modulename + "_" + str(i)
 		(base, off) = enttable[i]
-		addr = base*16+off
+		addr = base * 16 + off
 		ida_entry.add_entry(i, addr, name, 1)
-
 
 	#process imports
 
-	ida_segment.add_segm(0xF000, 0xF0000, 0xF0000 + importCount*2, "IMPORTS", "XTRN", 0)
+	ida_segment.add_segm(0xF000, 0xF0000, 0xF0000 + importCount * 2, "IMPORTS", "XTRN", 0)
+	ida_segment.set_segm_addressing(ida_segment.getseg(0xF0000), 0)
 
 	import_ea = 0xF0000
 
 	for seg in segtable:
 		segend = segtable[seg].end_ea
-		f.seek(MGROUPStart+segend)
+		f.seek(MGROUPStart + segend)
 		
 		for i in range(segimportstable[seg]):
 			count = DB(f)
@@ -342,10 +341,10 @@ def load_file(f, neflags, format):
 			if(module == 0xFFFF):
 				(base, off) = enttable[proc]
 			else:
-				modulestr = readPASSTR(pStrTab+module)
+				modulestr = readPASSTR(pStrTab + module)
 				if (proc & 0x8000) != 0: # read by ord
 					ordinal = proc & 0x7FFF
-					procname = modulestr + "_Ordinal" + str(ordinal)
+					procname = modulestr + "_" + str(ordinal)
 					if not modulestr in importedmodules:
 						if os.path.isfile(modulestr + ".EXE"):
 							importedmodules[modulestr] = loadExports(modulestr + ".EXE")
@@ -358,7 +357,7 @@ def load_file(f, neflags, format):
 					if modulestr in importedmodules and (importedmodules[modulestr] is not None) and ordinal in importedmodules[modulestr]:
 						procname = importedmodules[modulestr][ordinal]
 				else:
-					procname = readPASSTR(pStrTab+proc)
+					procname = readPASSTR(pStrTab + proc)
 				ida_bytes.create_data(import_ea, ida_bytes.FF_WORD, 2, ida_idaapi.BADADDR)
 				ida_name.force_name(import_ea, procname)
 				ida_bytes.set_cmt(import_ea, "Imported from " + modulestr, 1)
@@ -369,7 +368,7 @@ def load_file(f, neflags, format):
 			for xx in range(count):
 				next = ida_bytes.get_word(segtable[seg].start_ea + relocStart)
 				if mode == 0x20:
-					ida_bytes.put_word(segtable[seg].start_ea + relocStart+2, base)
+					ida_bytes.put_word(segtable[seg].start_ea + relocStart + 2, base)
 					ida_bytes.put_word(segtable[seg].start_ea + relocStart, off)
 				elif mode == 0x10:
 					ida_bytes.put_word(segtable[seg].start_ea + relocStart, off)
@@ -377,13 +376,6 @@ def load_file(f, neflags, format):
 					ida_bytes.put_word(segtable[seg].start_ea + relocStart, base)
 				relocStart = next
 
-				
-
-
 			#print "import %d: seg %d mode %s count %d relocStart %s module %s proc %s" % (i, seg, hex(mode), count, hex(relocStart), modulestr, hex(proc))
 
-	
-
-
-	
 	return 1
